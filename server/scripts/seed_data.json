@@ -1,0 +1,935 @@
+{
+ "decks": [
+  {
+   "name": "Английский: IT-лексика",
+   "subject": "Языки",
+   "cards": [
+    {
+     "front": "deployment",
+     "back": "развёртывание — выкладка приложения на сервер",
+     "ease": 2.5,
+     "interval": 6,
+     "days": 0
+    },
+    {
+     "front": "to merge",
+     "back": "объединять (ветки в Git)",
+     "ease": 2.36,
+     "interval": 15,
+     "days": 8
+    },
+    {
+     "front": "bug report",
+     "back": "отчёт об ошибке",
+     "ease": 2.6,
+     "interval": 24,
+     "days": 21
+    },
+    {
+     "front": "backward compatible",
+     "back": "обратно совместимый",
+     "ease": 2.1,
+     "interval": 3,
+     "days": 0
+    },
+    {
+     "front": "throughput",
+     "back": "пропускная способность",
+     "ease": 1.9,
+     "interval": 1,
+     "days": 0
+    },
+    {
+     "front": "to deprecate",
+     "back": "объявлять устаревшим (API, метод)",
+     "ease": 2.5,
+     "interval": 9,
+     "days": 5
+    },
+    {
+     "front": "requirement",
+     "back": "требование",
+     "ease": 2.8,
+     "interval": 32,
+     "days": 29
+    },
+    {
+     "front": "edge case",
+     "back": "граничный случай",
+     "ease": 2.3,
+     "interval": 4,
+     "days": 1
+    },
+    {
+     "front": "latency",
+     "back": "задержка, время отклика",
+     "ease": 2.5,
+     "interval": 1,
+     "days": 0
+    },
+    {
+     "front": "release candidate",
+     "back": "кандидат в релиз — версия перед выпуском",
+     "ease": 2.7,
+     "interval": 21,
+     "days": 18
+    }
+   ]
+  },
+  {
+   "name": "Румынский язык: глаголы A2",
+   "subject": "Языки",
+   "cards": [
+    {
+     "front": "a merge",
+     "back": "идти (eu merg, tu mergi)",
+     "ease": 2.5,
+     "interval": 12,
+     "days": 6
+    },
+    {
+     "front": "a vrea",
+     "back": "хотеть (eu vreau, tu vrei)",
+     "ease": 2.4,
+     "interval": 5,
+     "days": 0
+    },
+    {
+     "front": "a putea",
+     "back": "мочь (eu pot, tu poți)",
+     "ease": 2.2,
+     "interval": 2,
+     "days": 0
+    },
+    {
+     "front": "a ști",
+     "back": "знать (eu știu, tu știi)",
+     "ease": 2.6,
+     "interval": 25,
+     "days": 20
+    },
+    {
+     "front": "a lua",
+     "back": "брать (eu iau, tu iei)",
+     "ease": 2.0,
+     "interval": 1,
+     "days": 0
+    },
+    {
+     "front": "a face",
+     "back": "делать (eu fac, tu faci)",
+     "ease": 2.7,
+     "interval": 30,
+     "days": 26
+    },
+    {
+     "front": "a spune",
+     "back": "говорить, сказать (eu spun)",
+     "ease": 2.5,
+     "interval": 7,
+     "days": 3
+    }
+   ]
+  },
+  {
+   "name": "Дискретная математика",
+   "subject": "Математика",
+   "cards": [
+    {
+     "front": "Формула включений-исключений для двух множеств",
+     "back": "|A ∪ B| = |A| + |B| − |A ∩ B|",
+     "ease": 2.3,
+     "interval": 4,
+     "days": 0
+    },
+    {
+     "front": "Число сочетаний C(n, k)",
+     "back": "n! / (k! · (n − k)!)",
+     "ease": 2.5,
+     "interval": 10,
+     "days": 4
+    },
+    {
+     "front": "Число размещений A(n, k)",
+     "back": "n! / (n − k)!",
+     "ease": 2.1,
+     "interval": 2,
+     "days": 0
+    },
+    {
+     "front": "Закон де Моргана",
+     "back": "¬(A ∧ B) ≡ ¬A ∨ ¬B",
+     "ease": 2.6,
+     "interval": 22,
+     "days": 15
+    },
+    {
+     "front": "Импликация A → B через ∨",
+     "back": "¬A ∨ B",
+     "ease": 1.8,
+     "interval": 1,
+     "days": 0
+    },
+    {
+     "front": "Сумма степеней вершин графа",
+     "back": "2 · |E| (лемма о рукопожатиях)",
+     "ease": 2.5,
+     "interval": 8,
+     "days": 2
+    }
+   ]
+  },
+  {
+   "name": "Матанализ: производные и интегралы",
+   "subject": "Математика",
+   "cards": [
+    {
+     "front": "(sin x)'",
+     "back": "cos x",
+     "ease": 2.8,
+     "interval": 35,
+     "days": 30
+    },
+    {
+     "front": "(ln x)'",
+     "back": "1 / x",
+     "ease": 2.7,
+     "interval": 28,
+     "days": 22
+    },
+    {
+     "front": "(eˣ)'",
+     "back": "eˣ",
+     "ease": 2.9,
+     "interval": 40,
+     "days": 33
+    },
+    {
+     "front": "∫ 1/x dx",
+     "back": "ln |x| + C",
+     "ease": 2.4,
+     "interval": 6,
+     "days": 0
+    },
+    {
+     "front": "(u · v)'",
+     "back": "u'v + uv'",
+     "ease": 2.5,
+     "interval": 14,
+     "days": 9
+    },
+    {
+     "front": "∫ cos x dx",
+     "back": "sin x + C",
+     "ease": 2.6,
+     "interval": 21,
+     "days": 17
+    },
+    {
+     "front": "(tg x)'",
+     "back": "1 / cos² x",
+     "ease": 2.0,
+     "interval": 2,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Алгоритмы и структуры данных",
+   "subject": "Программирование",
+   "cards": [
+    {
+     "front": "Сложность бинарного поиска",
+     "back": "O(log n)",
+     "ease": 2.6,
+     "interval": 23,
+     "days": 19
+    },
+    {
+     "front": "Сложность быстрой сортировки (в среднем)",
+     "back": "O(n log n); в худшем случае O(n²)",
+     "ease": 2.2,
+     "interval": 3,
+     "days": 0
+    },
+    {
+     "front": "Стек",
+     "back": "LIFO: последним пришёл — первым вышел",
+     "ease": 2.7,
+     "interval": 30,
+     "days": 25
+    },
+    {
+     "front": "Очередь",
+     "back": "FIFO: первым пришёл — первым вышел",
+     "ease": 2.5,
+     "interval": 9,
+     "days": 0
+    },
+    {
+     "front": "Обход графа в ширину (BFS)",
+     "back": "использует очередь; находит кратчайший путь по рёбрам",
+     "ease": 2.0,
+     "interval": 1,
+     "days": 0
+    },
+    {
+     "front": "Хеш-таблица: поиск в среднем",
+     "back": "O(1)",
+     "ease": 2.4,
+     "interval": 5,
+     "days": 2
+    },
+    {
+     "front": "Алгоритм Дейкстры",
+     "back": "кратчайшие пути от вершины при неотрицательных весах",
+     "ease": 1.9,
+     "interval": 2,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Dart и Flutter: виджеты",
+   "subject": "Программирование",
+   "cards": [
+    {
+     "front": "StatelessWidget",
+     "back": "виджет без изменяемого состояния; build зависит только от параметров",
+     "ease": 2.7,
+     "interval": 26,
+     "days": 20
+    },
+    {
+     "front": "setState()",
+     "back": "помечает State «грязным» → build вызывается снова",
+     "ease": 2.5,
+     "interval": 12,
+     "days": 7
+    },
+    {
+     "front": "Expanded",
+     "back": "занимает оставшееся место в Row/Column по главной оси",
+     "ease": 2.3,
+     "interval": 4,
+     "days": 0
+    },
+    {
+     "front": "ListView.builder",
+     "back": "строит элементы лениво — только видимые",
+     "ease": 2.6,
+     "interval": 21,
+     "days": 16
+    },
+    {
+     "front": "context.push vs context.go",
+     "back": "push кладёт экран на стек; go заменяет стек по адресу",
+     "ease": 2.4,
+     "interval": 6,
+     "days": 3
+    },
+    {
+     "front": "Оператор ??",
+     "back": "возвращает правую часть, если левая равна null",
+     "ease": 2.8,
+     "interval": 33,
+     "days": 28
+    }
+   ]
+  },
+  {
+   "name": "Физика: механика",
+   "subject": "Естественные науки",
+   "cards": [
+    {
+     "front": "Второй закон Ньютона",
+     "back": "F = m · a",
+     "ease": 2.6,
+     "interval": 24,
+     "days": 18
+    },
+    {
+     "front": "Кинетическая энергия",
+     "back": "Eк = m · v² / 2",
+     "ease": 2.2,
+     "interval": 3,
+     "days": 0
+    },
+    {
+     "front": "Импульс тела",
+     "back": "p = m · v",
+     "ease": 2.5,
+     "interval": 8,
+     "days": 0
+    },
+    {
+     "front": "Закон всемирного тяготения",
+     "back": "F = G · m₁ · m₂ / r²",
+     "ease": 1.9,
+     "interval": 1,
+     "days": 0
+    },
+    {
+     "front": "Работа силы",
+     "back": "A = F · s · cos α",
+     "ease": 2.3,
+     "interval": 5,
+     "days": 2
+    },
+    {
+     "front": "Мощность",
+     "back": "N = A / t",
+     "ease": 2.4,
+     "interval": 6,
+     "days": 4
+    }
+   ]
+  },
+  {
+   "name": "Микроэкономика: основные понятия рыночного равновесия",
+   "subject": "Экономика",
+   "cards": [
+    {
+     "front": "Закон спроса",
+     "back": "при росте цены величина спроса снижается",
+     "ease": 2.7,
+     "interval": 28,
+     "days": 24
+    },
+    {
+     "front": "Равновесная цена",
+     "back": "цена, при которой Qd = Qs",
+     "ease": 2.6,
+     "interval": 22,
+     "days": 19
+    },
+    {
+     "front": "Эластичность спроса по цене",
+     "back": "% изменения Qd / % изменения цены",
+     "ease": 2.5,
+     "interval": 21,
+     "days": 14
+    },
+    {
+     "front": "Дефицит",
+     "back": "Qd > Qs при цене ниже равновесной",
+     "ease": 2.8,
+     "interval": 30,
+     "days": 27
+    },
+    {
+     "front": "Излишек",
+     "back": "Qs > Qd при цене выше равновесной",
+     "ease": 2.6,
+     "interval": 25,
+     "days": 22
+    },
+    {
+     "front": "Альтернативная стоимость",
+     "back": "ценность лучшей упущенной альтернативы",
+     "ease": 2.7,
+     "interval": 31,
+     "days": 26
+    }
+   ]
+  },
+  {
+   "name": "Английский: phrasal verbs",
+   "subject": "Языки",
+   "cards": [
+    {
+     "front": "to look up",
+     "back": "искать (в словаре)",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "to give up",
+     "back": "сдаваться, бросать",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "to carry out",
+     "back": "выполнять, проводить",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Английский: Present Perfect",
+   "subject": "Языки",
+   "cards": [
+    {
+     "front": "have + V3",
+     "back": "форма Present Perfect",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "already / yet",
+     "back": "маркеры Present Perfect",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "since / for",
+     "back": "с какого момента / как долго",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Французский: числа",
+   "subject": "Языки",
+   "cards": [
+    {
+     "front": "vingt",
+     "back": "двадцать",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "cent",
+     "back": "сто",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "mille",
+     "back": "тысяча",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Линейная алгебра: матрицы",
+   "subject": "Математика",
+   "cards": [
+    {
+     "front": "det(AB)",
+     "back": "det A · det B",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "(AB)ᵀ",
+     "back": "Bᵀ · Aᵀ",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Обратная матрица существует, если",
+     "back": "det A ≠ 0",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Теория вероятностей",
+   "subject": "Математика",
+   "cards": [
+    {
+     "front": "P(A ∪ B)",
+     "back": "P(A) + P(B) − P(A ∩ B)",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Независимые события",
+     "back": "P(A ∩ B) = P(A) · P(B)",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Формула Байеса",
+     "back": "P(A|B) = P(B|A) · P(A) / P(B)",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Статистика: распределения",
+   "subject": "Математика",
+   "cards": [
+    {
+     "front": "Математическое ожидание нормального N(μ, σ²)",
+     "back": "μ",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Дисперсия Бернулли",
+     "back": "p(1 − p)",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Правило трёх сигм",
+     "back": "≈ 99,7 % значений в μ ± 3σ",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Python: встроенные функции",
+   "subject": "Программирование",
+   "cards": [
+    {
+     "front": "len()",
+     "back": "длина последовательности",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "enumerate()",
+     "back": "пары (индекс, элемент)",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "zip()",
+     "back": "объединяет итерируемые попарно",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "SQL: соединения",
+   "subject": "Программирование",
+   "cards": [
+    {
+     "front": "INNER JOIN",
+     "back": "только совпадающие строки",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "LEFT JOIN",
+     "back": "все строки левой таблицы",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "GROUP BY",
+     "back": "группировка для агрегатов",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Git: основные команды",
+   "subject": "Программирование",
+   "cards": [
+    {
+     "front": "git switch -c",
+     "back": "создать ветку и перейти",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "git log --oneline",
+     "back": "история коротко",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "git stash",
+     "back": "спрятать незакоммиченные изменения",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Компьютерные сети: модель OSI",
+   "subject": "Программирование",
+   "cards": [
+    {
+     "front": "Уровень 3",
+     "back": "сетевой (IP)",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Уровень 4",
+     "back": "транспортный (TCP, UDP)",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Уровень 7",
+     "back": "прикладной (HTTP, DNS)",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Операционные системы: процессы",
+   "subject": "Программирование",
+   "cards": [
+    {
+     "front": "Процесс",
+     "back": "программа в выполнении со своим адресным пространством",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Поток",
+     "back": "единица планирования внутри процесса",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Взаимоблокировка",
+     "back": "процессы бесконечно ждут ресурсы друг друга",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Химия: периодическая таблица",
+   "subject": "Естественные науки",
+   "cards": [
+    {
+     "front": "Na",
+     "back": "натрий",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Fe",
+     "back": "железо",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Валентность кислорода",
+     "back": "II",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Биология: клетка",
+   "subject": "Естественные науки",
+   "cards": [
+    {
+     "front": "Митохондрия",
+     "back": "синтез АТФ",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Рибосома",
+     "back": "синтез белка",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Ядро",
+     "back": "хранение ДНК",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "История Молдовы: даты",
+   "subject": "История",
+   "cards": [
+    {
+     "front": "Год провозглашения независимости РМ",
+     "back": "1991",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Битва при Высоком Мосту",
+     "back": "1475",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Начало правления Стефана III Великого",
+     "back": "1457",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Всемирная история: XX век",
+   "subject": "История",
+   "cards": [
+    {
+     "front": "Начало Первой мировой войны",
+     "back": "1914",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Окончание Второй мировой войны",
+     "back": "1945",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Падение Берлинской стены",
+     "back": "1989",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  },
+  {
+   "name": "Макроэкономика: основные показатели",
+   "subject": "Экономика",
+   "cards": [
+    {
+     "front": "ВВП",
+     "back": "рыночная стоимость конечных товаров и услуг страны за год",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Инфляция",
+     "back": "устойчивый рост общего уровня цен",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    },
+    {
+     "front": "Безработица",
+     "back": "доля ищущих работу в рабочей силе",
+     "ease": 2.5,
+     "interval": 0,
+     "days": 0
+    }
+   ]
+  }
+ ],
+ "sessions": [
+  {
+   "deck": 0,
+   "daysAgo": 1,
+   "h": 21,
+   "m": 40,
+   "reviewed": 18,
+   "correct": 15
+  },
+  {
+   "deck": 4,
+   "daysAgo": 1,
+   "h": 8,
+   "m": 15,
+   "reviewed": 12,
+   "correct": 9
+  },
+  {
+   "deck": 2,
+   "daysAgo": 2,
+   "h": 19,
+   "m": 5,
+   "reviewed": 10,
+   "correct": 7
+  },
+  {
+   "deck": 1,
+   "daysAgo": 2,
+   "h": 7,
+   "m": 50,
+   "reviewed": 15,
+   "correct": 14
+  },
+  {
+   "deck": 5,
+   "daysAgo": 3,
+   "h": 22,
+   "m": 10,
+   "reviewed": 8,
+   "correct": 8
+  },
+  {
+   "deck": 6,
+   "daysAgo": 4,
+   "h": 18,
+   "m": 30,
+   "reviewed": 9,
+   "correct": 5
+  },
+  {
+   "deck": 3,
+   "daysAgo": 5,
+   "h": 20,
+   "m": 0,
+   "reviewed": 14,
+   "correct": 11
+  },
+  {
+   "deck": 0,
+   "daysAgo": 6,
+   "h": 9,
+   "m": 20,
+   "reviewed": 20,
+   "correct": 17
+  }
+ ]
+}

@@ -2,13 +2,15 @@
   "name": "pam-backend-node",
   "version": "1.0.0",
   "private": true,
-  "description": "PAM backend template - Node.js/Express port",
+  "description": "PAM backend template - Node.js/Express port, расширен сущностями StudyCards (T13)",
   "type": "module",
   "engines": {
     "node": ">=22.13"
   },
   "scripts": {
-    "start": "node --disable-warning=ExperimentalWarning server.js"
+    "start": "node --disable-warning=ExperimentalWarning server.js",
+    "check": "node scripts/check.mjs",
+    "seed": "node scripts/seed.mjs"
   },
   "dependencies": {
     "express": "5.2.1",
