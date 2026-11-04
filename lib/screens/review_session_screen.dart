@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../data/mock_data.dart';
+import '../data/flashcard.dart';
+import '../data/review_session.dart';
+import '../models/library_model.dart';
+import '../models/sessions_model.dart';
+import '../models/srs.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/duo_progress_bar.dart';
+import '../widgets/error_view.dart';
+import '../widgets/loading_view.dart';
 import '../widgets/stat_tile.dart';
 
 /// Экран 6. Сессия повторения: переворот карточки + оценка «снова / хорошо / легко».
-/// L3: ход сессии — эфемерное состояние экрана (setState); расписание (SRS) — на L4.
+/// L4: оценка идёт в LibraryModel.review → правило SRS планирует nextReviewAt,
+/// repository сохраняет расписание; итог сессии пишется в SessionsModel.
 class ReviewSessionScreen extends StatefulWidget {
   /// null — все колоды (кнопка «Начать повторение» на экране колод).
   final int? deckId;
@@ -20,31 +28,50 @@ class ReviewSessionScreen extends StatefulWidget {
   State<ReviewSessionScreen> createState() => _ReviewSessionScreenState();
 }
 
-enum Grade { again, good, easy }
-
 class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
-  late final List<Flashcard> _queue;
+  // Ход сессии — эфемерное состояние экрана: очередь фиксируется в начале.
+  List<Flashcard>? _queue;
   int _index = 0;
   bool _flipped = false;
-  int _correct = 0;
+  bool _busy = false;
+  bool _saved = false;
+  final Map<int, (int reviewed, int correct)> _perDeck = {};
 
-  @override
-  void initState() {
-    super.initState();
-    _queue = mockCards
-        .where((c) => widget.deckId == null || c.deckId == widget.deckId)
-        .where((c) => !c.nextReviewAt.isAfter(mockToday))
-        .toList();
-  }
+  int get _reviewed => _perDeck.values.fold(0, (s, e) => s + e.$1);
+  int get _correct => _perDeck.values.fold(0, (s, e) => s + e.$2);
+  bool get _finished => _queue != null && _index >= _queue!.length;
 
-  bool get _finished => _index >= _queue.length;
-
-  void _grade(Grade grade) {
+  Future<void> _grade(Grade grade) async {
+    final card = _queue![_index];
+    setState(() => _busy = true);
+    final error = await context.read<LibraryModel>().review(card, grade); // read: действие
+    if (!mounted) return;
+    setState(() => _busy = false);
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+      return; // карточка остаётся на экране — можно оценить ещё раз
+    }
+    final (r, c) = _perDeck[card.deckId] ?? (0, 0);
+    _perDeck[card.deckId] = (r + 1, c + (grade == Grade.again ? 0 : 1));
     setState(() {
-      if (grade != Grade.again) _correct++;
       _index++;
       _flipped = false;
     });
+    if (_finished) await _saveSessions();
+  }
+
+  /// Одна ReviewSession на каждую колоду, карточки которой были в сессии.
+  Future<void> _saveSessions() async {
+    final sessions = context.read<SessionsModel>();
+    final now = context.read<LibraryModel>().now;
+    for (final MapEntry(key: deckId, value: (reviewed, correct)) in _perDeck.entries) {
+      final error = await sessions.add(ReviewSession(0, deckId, now, reviewed, correct));
+      if (error != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error)));
+        return;
+      }
+    }
+    if (mounted) setState(() => _saved = true);
   }
 
   Future<void> _close() async {
@@ -56,7 +83,10 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Завершить сессию?'),
-        content: Text('Повторено ${cardsLabel(_index)} из ${_queue.length}.'),
+        content: Text(
+          'Повторено ${cardsLabel(_index)} из ${_queue!.length}. '
+          'Расписание уже сохранено.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx, false),
@@ -73,24 +103,56 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
         ],
       ),
     );
-    if (ok == true && mounted) context.pop();
+    if (ok != true || !mounted) return;
+    await _saveSessions(); // прерванная сессия тоже попадает в историю
+    if (mounted) context.pop();
   }
 
   void _finish() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Сессия завершена: $_correct из ${_queue.length} верно')),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text('Сессия завершена: $_correct из $_reviewed верно')));
     context.pop();
   }
 
   @override
   Widget build(BuildContext context) {
+    final library = context.watch<LibraryModel>();
     final duo = context.duo;
     final text = Theme.of(context).textTheme;
+
+    // Очередь фиксируется, как только данные загружены (дальнейшие оценки её не меняют).
+    if (_queue == null && !library.isLoading && library.error == null) {
+      _queue = library.dueCards(deckId: widget.deckId);
+    }
+    final queue = _queue;
+
     final deckName = widget.deckId == null
         ? 'Все колоды'
-        : mockDecks.where((d) => d.id == widget.deckId).firstOrNull?.name ?? '';
+        : library.deckById(widget.deckId!)?.name ?? '';
 
+    final Widget content;
+    if (queue == null) {
+      content = library.error != null
+          ? ErrorView(message: library.error!, onRetry: () => context.read<LibraryModel>().load())
+          : const LoadingView();
+    } else if (queue.isEmpty) {
+      content = _EmptyState(onBack: () => context.pop());
+    } else if (_finished) {
+      content = _Summary(
+        total: _reviewed,
+        correct: _correct,
+        xp: _reviewed * SessionsModel.xpPerCard,
+        onDone: _saved ? _finish : null,
+      );
+    } else {
+      content = _CardFace(
+        card: queue[_index],
+        flipped: _flipped,
+        onFlip: () => setState(() => _flipped = true),
+      );
+    }
+
+    final total = queue?.length ?? 0;
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -105,12 +167,10 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
                     onPressed: _close,
                     icon: Icon(Icons.close_rounded, color: duo.muted, size: 30),
                   ),
-                  Expanded(
-                    child: DuoProgressBar(value: _queue.isEmpty ? 1 : _index / _queue.length),
-                  ),
+                  Expanded(child: DuoProgressBar(value: total == 0 ? 0 : _index / total)),
                   const SizedBox(width: 12),
                   Text(
-                    '${_index.clamp(0, _queue.length)}/${_queue.length}',
+                    '${_index.clamp(0, total)}/$total',
                     style: text.titleMedium?.copyWith(color: duo.muted),
                   ),
                 ],
@@ -122,61 +182,14 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
               ),
               const SizedBox(height: 12),
               Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.only(left: 8),
-                  child: _queue.isEmpty
-                      ? _EmptyState(onBack: () => context.pop())
-                      : _finished
-                      ? _Summary(total: _queue.length, correct: _correct, onDone: _finish)
-                      : _CardFace(
-                          card: _queue[_index],
-                          flipped: _flipped,
-                          onFlip: () => setState(() => _flipped = true),
-                        ),
-                ),
+                child: Padding(padding: const EdgeInsets.only(left: 8), child: content),
               ),
-              if (!_finished && _queue.isNotEmpty) ...[
+              if (queue != null && queue.isNotEmpty && !_finished) ...[
                 const SizedBox(height: 16),
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: _flipped
-                      ? Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Text(
-                              'Насколько легко вы вспомнили ответ?',
-                              textAlign: TextAlign.center,
-                              style: text.titleMedium,
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: DuoButton(
-                                    label: 'Снова',
-                                    variant: DuoButtonVariant.danger,
-                                    onPressed: () => _grade(Grade.again),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: DuoButton(
-                                    label: 'Хорошо',
-                                    onPressed: () => _grade(Grade.good),
-                                  ),
-                                ),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: DuoButton(
-                                    label: 'Легко',
-                                    variant: DuoButtonVariant.secondary,
-                                    onPressed: () => _grade(Grade.easy),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        )
+                      ? _GradeButtons(card: queue[_index], busy: _busy, onGrade: _grade)
                       : DuoButton(
                           label: 'Показать ответ',
                           variant: DuoButtonVariant.secondary,
@@ -188,6 +201,61 @@ class _ReviewSessionScreenState extends State<ReviewSessionScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Три оценки; под каждой — интервал, который назначит правило SRS.
+class _GradeButtons extends StatelessWidget {
+  final Flashcard card;
+  final bool busy;
+  final ValueChanged<Grade> onGrade;
+
+  const _GradeButtons({required this.card, required this.busy, required this.onGrade});
+
+  @override
+  Widget build(BuildContext context) {
+    final text = Theme.of(context).textTheme;
+    String caption(Grade g) => daysLabel(Srs.nextInterval(card, g));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'Насколько легко вы вспомнили ответ?',
+          textAlign: TextAlign.center,
+          style: text.titleMedium,
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: DuoButton(
+                label: 'Снова',
+                caption: caption(Grade.again),
+                variant: DuoButtonVariant.danger,
+                onPressed: busy ? null : () => onGrade(Grade.again),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: DuoButton(
+                label: 'Хорошо',
+                caption: caption(Grade.good),
+                onPressed: busy ? null : () => onGrade(Grade.good),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: DuoButton(
+                label: 'Легко',
+                caption: caption(Grade.easy),
+                variant: DuoButtonVariant.secondary,
+                onPressed: busy ? null : () => onGrade(Grade.easy),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
@@ -251,9 +319,15 @@ class _CardFace extends StatelessWidget {
 class _Summary extends StatelessWidget {
   final int total;
   final int correct;
-  final VoidCallback onDone;
+  final int xp;
+  final VoidCallback? onDone; // null, пока сессия сохраняется
 
-  const _Summary({required this.total, required this.correct, required this.onDone});
+  const _Summary({
+    required this.total,
+    required this.correct,
+    required this.xp,
+    required this.onDone,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -292,8 +366,10 @@ class _Summary extends StatelessWidget {
             ),
           ],
         ),
+        const SizedBox(height: 10),
+        StatTile(icon: Icons.bolt_rounded, color: duo.gold, value: '+$xp XP', label: 'опыт'),
         const SizedBox(height: 24),
-        DuoButton(label: 'Продолжить', onPressed: onDone),
+        DuoButton(label: onDone == null ? 'Сохранение…' : 'Продолжить', onPressed: onDone),
       ],
     );
   }
