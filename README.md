@@ -3,58 +3,77 @@
 Проект дисциплины PAM, тема **T13 StudyCards** (сложность: повышенная).
 Автор: Andrii Kostin, группа TI-235. Преподаватель: унив. лектор Ionel Antohi.
 
-**Этап L4 — state management и паттерн Repository с mock-данными.** Проект продолжает L3
-(та же история git). Разделяемое состояние — в моделях `ChangeNotifier` (пакет `provider`),
-данные — через интерфейсы Repository на `Future<Result<T>>`, сегодня — mock в памяти
-с задержкой 800 мс и переключаемой аварией. Закройте приложение — состояние погибает:
-это контракт L4 (локальное сохранение — материал L6).
+**Этап L5 — интеграция с собственным backend-ом.** Проект продолжает L4 (та же история git).
+Backend — порт Node.js шаблона курса в папке `server/`, расширенный сущностями темы.
+Mock-хранилища удалены; источник данных сменён только в корне композиции `main.dart`.
 
-## Запуск
+## 1. Запуск backend-а
+
+Нужен Node.js ≥ 22.13 (используется встроенный `node:sqlite`).
+
+```bash
+cd server
+npm install        # один раз (express, multer)
+npm start          # → http://localhost:8080, app.db создаётся сам
+```
+
+Во втором терминале:
+
+```bash
+cd server
+npm run check      # контрактный тест: базовый контракт шаблона + маршруты темы (33 проверки)
+npm run seed       # демо-данные: andrii.kostin@isa.utm.md / parola123, 24 колоды, 8 сессий
+```
+
+Маршруты темы (все под `requireAuth`, ошибки — в стандартном конверте):
+
+| Метод | Адрес | Описание |
+|---|---|---|
+| GET / POST | `/decks` | список колод (`page`, `limit`, `search`) / создание; `cardCount` считает сервер |
+| GET / PUT / DELETE | `/decks/{id}` | колода; DELETE удаляет и её карточки |
+| GET / POST | `/cards` | список (`deckId`, `page`, `limit`, `search`) / создание (ease 2,5) |
+| GET / PUT / DELETE | `/cards/{id}` | PUT — и правка сторон, и расписание SRS |
+| GET / POST | `/review-sessions` | история / новая сессия (`correctCount ≤ reviewedCount`) |
+| DELETE | `/review-sessions/{id}` | удаление сессии |
+
+## 2. Запуск приложения
 
 ```bash
 flutter pub get
-flutter run            # эмулятор Android / телефон по USB
-flutter test           # SRS, модели, дымовой тест
+flutter run                                         # эмулятор: сервер = http://10.0.2.2:8080
+flutter run --dart-define=API_BASE=http://192.168.x.x:8080   # физический телефон
+flutter test
 ```
 
-## Архитектура
+Android: в `AndroidManifest.xml` добавлены `INTERNET` и `usesCleartextTraffic` (сервер — по HTTP).
 
-```text
-экраны (UI)  ── watch в build / read в callback-ах ──▶  модели ChangeNotifier
-                                                        LibraryModel  — колоды + карточки + SRS
-                                                        SessionsModel — история + статистика
-                                                        UserModel     — профиль
-                                                              │ Future<Result<T>>
-                                                              ▼
-                                  DeckRepository / CardRepository / SessionRepository / UserRepository
-                                                              ▲ implements
-                                  Mock*Repository → MockDatabase (память + задержка + авария)
-```
+## Что изменилось относительно L4
 
-- `lib/data/result.dart` — sealed `Result` (`Ok` / `Err`): ожидаемый отказ — значение, а не исключение.
-- `lib/data/*_repository.dart` — интерфейсы CRUD; на L5 каждый метод станет REST-вызовом.
-- `lib/data/mock_*.dart`, `mock_data.dart` — единственное место, видящее seed-данные.
-- `lib/models/srs.dart` — правило из ТЗ: снова → 1 день, ease − 0,2; хорошо → интервал × ease;
-  легко → интервал × ease × 1,3; начальный ease 2,5 (минимум 1,3, как в SM-2).
-- `main.dart` — корень композиции: `MultiProvider`, здесь и только здесь выбирается источник.
+- `lib/data/token_store.dart` — JWT в `shared_preferences` (пароль не хранится никогда).
+- `lib/data/api_message.dart` — конверт ошибки → русское сообщение (один `switch`).
+- `lib/data/auth_api.dart` — register / login; `lib/data/api_client.dart` — общий скелет
+  запроса: Bearer, timeout, три слоя отказа → `Err(msg)`, поток 401 (token стёрт → login).
+- `lib/data/http_*_repository.dart` — вторые реализации интерфейсов L4.
+- `main.dart` — async: запуск решает по token-у; mock заменён на http.
+- Задание 6: `fetchAll({page, limit, search})`, `LibraryModel.load(search:)` + `loadMore()`,
+  поиск в «Моих колодах» — на сервере, хвост списка подгружает страницы.
 
-Проверка чистой архитектуры (должна быть пустой):
+Доказательство «экраны не тронуты» (коммит замены источника против последнего коммита L4):
 
 ```bash
-grep -rn "mock_data\.dart\|mockDecks\|mockCards" lib/screens lib/widgets lib/models
+git diff --stat <коммит README L4> <коммит «Mock умирает»> -- lib/screens lib/models
+# изменены только login_screen.dart и profile_screen.dart — легитимные исключения
 ```
 
 ## Что показать на защите
 
-1. Запуск → «Мои колоды»: spinner (задержка 800 мс), затем список.
-2. Колода → «+ Карточка» → валидная форма → список колоды вырос, счётчики и бейдж
-   «к повторению» на вкладке «Колоды» выросли сами (одна весть — все экраны).
-3. Свайп карточки влево → диалог → карточка исчезает отовсюду.
-4. «Повторить» → оценки показывают интервал SRS → итог сессии с XP → статистика обновилась.
-5. Профиль → «Симулировать сбой сети» → вернуться к колодам, потянуть вниз → экран ошибки
-   с «Повторить»; форма при аварии → SnackBar с ошибкой, данные остаются в полях.
-6. Выключить аварию → «Повторить» → данные вернулись.
-
-Ответ на вопрос «завтра mock становится backend-ом — какие файлы трогаем?»: новая реализация
-repository + корень композиции в `main.dart`; экраны и модели — нет (кроме переключателя
-аварии в профиле, который уходит вместе с mock-ом).
+1. `npm start`, `npm run check` (PASS 33/33), `npm run seed`.
+2. Вход с неверным паролем → «Неверный email или пароль»; регистрация на занятый email →
+   «Аккаунт с этим email уже существует».
+3. Верный вход → колоды с сервера; прокрутка вниз → подгружается вторая страница.
+4. Поиск «Английский» + Enter → фильтр на сервере (`GET /decks?search=`).
+5. Новая карточка → `POST /cards` (id от сервера), счётчики выросли.
+6. Остановить сервер → потянуть список → экран ошибки → запустить → «Повторить».
+7. Перезапустить сервер с `JWT_SECRET=alt-secret` → первый запрос даёт 401 → приложение
+   само возвращается на login (token стёрт).
+8. Закрыть и открыть приложение → сразу колоды (token пережил перезапуск); профиль → «Выйти».
