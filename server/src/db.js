@@ -30,6 +30,36 @@ export function initDb(path) {
       created_at TEXT    NOT NULL
     );
 
+    -- ---- StudyCards (тема T13): колоды, карточки, сессии повторения ----
+
+    CREATE TABLE IF NOT EXISTS decks (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id    INTEGER NOT NULL REFERENCES users (id),
+      name       TEXT    NOT NULL,
+      subject    TEXT    NOT NULL,
+      created_at TEXT    NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS cards (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      deck_id        INTEGER NOT NULL REFERENCES decks (id),
+      front          TEXT    NOT NULL,
+      back           TEXT    NOT NULL,
+      ease_factor    REAL    NOT NULL DEFAULT 2.5,
+      interval_days  INTEGER NOT NULL DEFAULT 0,
+      next_review_at TEXT    NOT NULL,
+      created_at     TEXT    NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS review_sessions (
+      id             INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id        INTEGER NOT NULL REFERENCES users (id),
+      deck_id        INTEGER NOT NULL REFERENCES decks (id),
+      date           TEXT    NOT NULL,
+      reviewed_count INTEGER NOT NULL,
+      correct_count  INTEGER NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS files (
       id         INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id    INTEGER NOT NULL REFERENCES users (id),
