@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../data/auth_api.dart';
+import '../data/result.dart';
+import '../models/library_model.dart';
+import '../models/sessions_model.dart';
+import '../models/user_model.dart';
 
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 
 /// Экран 1. Вход / регистрация.
+/// L5: форма связана с backend-ом (AuthApi), token — в shared_preferences.
 /// L3: локальная валидация (Form + validator) и context.go после входа —
 /// login уходит из стека, «назад» в него не ведёт.
 class LoginScreen extends StatefulWidget {
@@ -18,6 +26,9 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final _nameCtrl = TextEditingController(); // L5: register требует name
+  bool _isRegister = false; // режим формы: вход / регистрация
+  bool _busy = false; // запрос «летит» — кнопка гаснет (двойной submit)
   bool _showPassword = false; // эфемерное состояние экрана → setState
 
   static final _emailRe = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
@@ -25,6 +36,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _emailCtrl.dispose(); // кто создаёт, тот освобождает
+    _nameCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();
   }
@@ -43,9 +55,26 @@ class _LoginScreenState extends State<LoginScreen> {
     return null;
   }
 
-  void _submit() {
-    if (!_formKey.currentState!.validate()) return; // ошибки уже на экране
-    context.go('/decks'); // go, НЕ push: login уходит из стека
+  /// Валидный submit бьёт по серверу; вердикт → навигация или SnackBar.
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return; // валидация L3, нетронута
+    final auth = context.read<AuthApi>();
+    setState(() => _busy = true);
+    final result = _isRegister
+        ? await auth.register(_emailCtrl.text.trim(), _passCtrl.text, _nameCtrl.text.trim())
+        : await auth.login(_emailCtrl.text.trim(), _passCtrl.text);
+    if (!mounted) return; // экран может умереть, пока запрос летит
+    setState(() => _busy = false);
+    switch (result) {
+      case Ok():
+        // token сохранён — данные нового пользователя загружаются заново
+        context.read<LibraryModel>().load();
+        context.read<SessionsModel>().load();
+        context.read<UserModel>().load();
+        context.go('/decks'); // go, НЕ push: login уходит из стека
+      case Err(:final msg):
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+    }
   }
 
   @override
@@ -88,6 +117,19 @@ class _LoginScreenState extends State<LoginScreen> {
                   style: text.bodyLarge?.copyWith(color: duo.muted),
                 ),
                 const SizedBox(height: 32),
+                if (_isRegister) ...[
+                  TextFormField(
+                    controller: _nameCtrl,
+                    textCapitalization: TextCapitalization.words,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      hintText: 'Имя',
+                      prefixIcon: Icon(Icons.person_rounded),
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Введите имя' : null,
+                  ),
+                  const SizedBox(height: 12),
+                ],
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
@@ -119,13 +161,16 @@ class _LoginScreenState extends State<LoginScreen> {
                   validator: _validatePassword,
                 ),
                 const SizedBox(height: 24),
-                DuoButton(label: 'Войти', onPressed: _submit),
+                DuoButton(
+                  label: _busy ? 'Подождите…' : (_isRegister ? 'Создать аккаунт' : 'Войти'),
+                  onPressed: _busy ? null : _submit,
+                ),
                 const SizedBox(height: 12),
                 TextButton(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Регистрация появится вместе с сервером')),
+                  onPressed: _busy ? null : () => setState(() => _isRegister = !_isRegister),
+                  child: Text(
+                    _isRegister ? 'Уже есть аккаунт? Войдите' : 'Нет аккаунта? Зарегистрируйтесь',
                   ),
-                  child: const Text('Нет аккаунта? Зарегистрируйтесь'),
                 ),
               ],
             ),
