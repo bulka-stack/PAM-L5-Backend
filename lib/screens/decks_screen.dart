@@ -24,10 +24,16 @@ class DecksScreen extends StatefulWidget {
 }
 
 class _DecksScreenState extends State<DecksScreen> {
-  // Эфемерное состояние экрана: текст поиска и выбранная дисциплина → setState.
+  // Эфемерное состояние экрана: текст в поле поиска и выбранная дисциплина.
+  // L5: сам поиск — на сервере (LibraryModel.load(search:)), дисциплина фильтрует загруженное.
   final _searchCtrl = TextEditingController();
-  String _query = '';
   String? _subject;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl.text = context.read<LibraryModel>().search;
+  }
 
   @override
   void dispose() {
@@ -35,13 +41,10 @@ class _DecksScreenState extends State<DecksScreen> {
     super.dispose();
   }
 
-  List<Deck> _visible(List<Deck> decks) {
-    final q = _query.trim().toLowerCase();
-    return decks
-        .where((d) => _subject == null || d.subject == _subject)
-        .where((d) => q.isEmpty || d.name.toLowerCase().contains(q))
-        .toList();
-  }
+  List<Deck> _visible(List<Deck> decks) =>
+      decks.where((d) => _subject == null || d.subject == _subject).toList();
+
+  void _search(String query) => context.read<LibraryModel>().load(search: query.trim());
 
   @override
   Widget build(BuildContext context) {
@@ -133,19 +136,19 @@ class _DecksScreenState extends State<DecksScreen> {
                   TextField(
                     controller: _searchCtrl,
                     textInputAction: TextInputAction.search,
-                    onChanged: (v) => setState(() => _query = v),
+                    onSubmitted: _search, // запрос уходит на сервер: GET /decks?search=
                     decoration: InputDecoration(
                       hintText: 'Поиск колоды',
                       prefixIcon: const Icon(Icons.search_rounded),
-                      suffixIcon: _query.isEmpty
+                      suffixIcon: library.search.isEmpty
                           ? null
                           : IconButton(
                               tooltip: 'Очистить',
                               icon: const Icon(Icons.close_rounded),
-                              onPressed: () => setState(() {
+                              onPressed: () {
                                 _searchCtrl.clear();
-                                _query = '';
-                              }),
+                                _search('');
+                              },
                             ),
                     ),
                   ),
@@ -184,9 +187,17 @@ class _DecksScreenState extends State<DecksScreen> {
             SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 96),
               sliver: SliverList.separated(
-                itemCount: decks.length,
+                itemCount: decks.length + (library.hasMore ? 1 : 0),
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
                 itemBuilder: (context, index) {
+                  if (index == decks.length) {
+                    // хвост списка просит следующую страницу (read — это действие)
+                    context.read<LibraryModel>().loadMore();
+                    return const Padding(
+                      padding: EdgeInsets.all(16),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
                   final deck = decks[index];
                   return DeckCard(
                     key: ValueKey(deck.id), // идентичность из данных

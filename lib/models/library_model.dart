@@ -18,33 +18,66 @@ class LibraryModel extends ChangeNotifier {
   final CardRepository _cards;
   final DateTime Function() _clock;
 
+  static const pageSize = 20;
+
   bool _loading = false;
+  bool _loadingMore = false;
+  bool _hasMore = false;
+  int _page = 1;
+  String _search = '';
   String? _error;
   List<Deck> _deckList = const [];
   List<Flashcard> _cardList = const [];
 
   bool get isLoading => _loading;
+  bool get hasMore => _hasMore; // полная страница → видимо, есть ещё
+  String get search => _search;
   String? get error => _error;
   List<Deck> get decks => List.unmodifiable(_deckList);
   List<Flashcard> get cards => List.unmodifiable(_cardList);
   DateTime get now => _clock();
 
   /// Загрузка: триада loading / data / error (C8) как состояние модели.
-  Future<void> load() async {
+  /// L5: [search] — фильтр на сервере; retry без аргумента сохраняет прежний фильтр.
+  Future<void> load({String? search}) async {
+    _search = search ?? _search;
+    _page = 1;
     _loading = true;
     _error = null;
     notifyListeners(); // подписанные экраны входят в «грузится»
 
-    final (decks, cards) = await (_decks.fetchAll(), _cards.fetchAll()).wait;
+    final (decks, cards) = await (
+      _decks.fetchAll(page: 1, limit: pageSize, search: _search),
+      _cards.fetchAll(),
+    ).wait;
     switch ((decks, cards)) {
       case (Ok(value: final d), Ok(value: final c)):
         _deckList = d;
         _cardList = c;
+        _hasMore = d.length == pageSize;
       case (Err(:final msg), _) || (_, Err(:final msg)):
         _error = msg;
     }
     _loading = false;
     notifyListeners(); // …и выходят: с данными или с ошибкой — никогда молча
+  }
+
+  /// Следующая страница колод — её просит хвост списка.
+  /// Стартует из itemBuilder, в разгар build: поэтому _loadingMore = true БЕЗ notifyListeners.
+  Future<void> loadMore() async {
+    if (_loadingMore || _loading || !_hasMore) return; // guard: без него — дубли страниц
+    _loadingMore = true;
+    final result = await _decks.fetchAll(page: _page + 1, limit: pageSize, search: _search);
+    switch (result) {
+      case Ok(:final value):
+        _page += 1;
+        _deckList = [..._deckList, ...value]; // страница ПРИКЛЕИВАЕТСЯ
+        _hasMore = value.length == pageSize;
+      case Err(:final msg):
+        _error = msg;
+    }
+    _loadingMore = false;
+    notifyListeners();
   }
 
   // ------------------------------------------------------------- запросы

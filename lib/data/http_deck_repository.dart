@@ -9,9 +9,14 @@ class HttpDeckRepository implements DeckRepository {
   final ApiClient _api;
 
   @override
-  Future<Result<List<Deck>>> fetchAll() => _api.send(
+  Future<Result<List<Deck>>> fetchAll({int page = 1, int limit = 20, String? search}) => _api.send(
     'GET',
     '/decks',
+    query: {
+      'page': '$page',
+      'limit': '$limit',
+      if (search != null && search.isNotEmpty) 'search': search, // поиск — НА СЕРВЕРЕ
+    },
     okStatus: 200,
     parse: (json) =>
         ((json as Map<String, dynamic>)['items'] as List) // конверт!
