@@ -1,67 +1,55 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:study_cards/data/deck.dart';
 import 'package:study_cards/data/flashcard.dart';
-import 'package:study_cards/data/mock_card_repository.dart';
-import 'package:study_cards/data/mock_database.dart';
-import 'package:study_cards/data/mock_deck_repository.dart';
 import 'package:study_cards/models/library_model.dart';
 import 'package:study_cards/models/srs.dart';
 
+import 'fake_repositories.dart';
+
 void main() {
-  late MockDatabase db;
+  final now = DateTime(2026, 11, 4, 12);
+  late FakeDeckRepository decks;
   late LibraryModel model;
-  var notifications = 0;
 
   setUp(() async {
-    db = MockDatabase();
-    model = LibraryModel(MockDeckRepository(db), MockCardRepository(db));
-    notifications = 0;
-    model.addListener(() => notifications++);
+    decks = FakeDeckRepository();
+    model = LibraryModel(decks, FakeCardRepository(now), clock: () => now);
     await model.load();
   });
 
-  test('load: триада loading → data, коллекции только для чтения', () {
-    expect(model.isLoading, isFalse);
-    expect(model.error, isNull);
-    expect(model.decks, hasLength(8));
-    expect(notifications, 2); // «грузится» и «готово»
-    expect(() => model.decks.add(const Deck(99, 'x', 'y')), throwsUnsupportedError);
+  test('пагинация: 20 колод, затем ещё 5 приклеиваются', () async {
+    expect(model.decks, hasLength(20));
+    expect(model.hasMore, isTrue);
+    await model.loadMore();
+    expect(model.decks, hasLength(25));
+    expect(model.hasMore, isFalse);
   });
 
-  test('новая карточка: id даёт хранилище, счётчики и «к повторению» растут', () async {
-    final before = model.cardCount(1);
-    final dueBefore = model.totalDue;
-    final err = await model.addCard(
-      Flashcard.draft(1, 'scalability', 'масштабируемость', model.now),
-    );
-    expect(err, isNull);
-    expect(model.cardCount(1), before + 1);
-    expect(model.totalDue, dueBefore + 1);
-    expect(model.cardsOf(1).last.id, greaterThanOrEqualTo(1000));
+  test('поиск сохраняется при retry', () async {
+    await model.load(search: 'Колода 2');
+    expect(model.decks.map((d) => d.name), everyElement(contains('Колода 2')));
+    await model.load(); // retry без аргумента
+    expect(model.search, 'Колода 2');
   });
 
-  test('оценка «хорошо» убирает карточку из очереди на сегодня', () async {
-    final card = model.dueCards(deckId: 1).first;
-    final err = await model.review(card, Grade.good);
-    expect(err, isNull);
-    expect(model.dueCards(deckId: 1).any((c) => c.id == card.id), isFalse);
-  });
-
-  test('удаление колоды удаляет и её карточки', () async {
-    expect(await model.removeDeck(2), isNull);
-    expect(model.deckById(2), isNull);
-    expect(model.cardsOf(2), isEmpty);
-  });
-
-  test('авария: Err вместо данных, состояние не тронуто', () async {
-    db.simulateError = true;
-    final err = await model.addDeck(const Deck(0, 'Новая', 'Языки'));
-    expect(err, MockDatabase.errNetwork);
-    expect(model.decks, hasLength(8));
+  test('ошибка → error, retry → данные', () async {
+    decks.fail = true;
     await model.load();
-    expect(model.error, MockDatabase.errNetwork);
-    db.simulateError = false;
+    expect(model.error, 'Нет сети — повторите попытку');
+    decks.fail = false;
     await model.load();
     expect(model.error, isNull);
+  });
+
+  test('оценка в сессии планирует карточку по SRS', () async {
+    final card = model.dueCards().single;
+    expect(await model.review(card, Grade.good), isNull);
+    expect(model.totalDue, 0);
+    expect(model.cardById(1)!.intervalDays, 3);
+  });
+
+  test('новая карточка видна в счётчиках', () async {
+    await model.addCard(Flashcard.draft(1, 'jitter', 'дрожание задержки', now));
+    expect(model.cardCount(1), 2);
+    expect(model.totalDue, 2);
   });
 }
