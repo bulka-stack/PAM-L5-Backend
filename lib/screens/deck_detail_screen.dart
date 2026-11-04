@@ -1,28 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../data/mock_data.dart';
+import '../data/deck.dart';
+import '../data/flashcard.dart';
+import '../models/library_model.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import '../widgets/duo_button.dart';
+import '../widgets/error_view.dart';
 import '../widgets/flashcard_tile.dart';
+import '../widgets/loading_view.dart';
 import '../widgets/section_title.dart';
 import '../widgets/stat_tile.dart';
 import '../widgets/subject_avatar.dart';
 
 /// Экран 3. Карточка колоды: список карточек + статистика колоды.
-/// L3: получает id из адреса /decks/:id и сам ищет свою колоду.
+/// L4: ищет колоду через модель; удаление — через repository, эффект виден везде.
 class DeckDetailScreen extends StatelessWidget {
   final int id;
 
   const DeckDetailScreen({super.key, required this.id});
 
-  Future<void> _confirmDelete(BuildContext context, Deck deck) async {
+  Future<bool> _confirm(BuildContext context, String title, String message) async {
     final ok = await showDialog<bool>(
       context: context,
       builder: (dialogCtx) => AlertDialog(
-        title: const Text('Удалить колоду?'),
-        content: Text('«${deck.name}» и все её карточки будут удалены.'),
+        title: Text(title),
+        content: Text(message),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: const Text('Нет')),
           FilledButton(
@@ -36,27 +41,47 @@ class DeckDetailScreen extends StatelessWidget {
         ],
       ),
     );
-    if (ok == true && context.mounted) {
-      // L3: только подтверждение + SnackBar — реальное удаление придёт на L4.
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('Колода «${deck.name}» удалена')));
-      context.pop();
+    return ok == true;
+  }
+
+  Future<void> _deleteDeck(BuildContext context, Deck deck) async {
+    final ok = await _confirm(
+      context,
+      'Удалить колоду?',
+      '«${deck.name}» и все её карточки будут удалены.',
+    );
+    if (!ok || !context.mounted) return;
+    final messenger = ScaffoldMessenger.of(context);
+    final error = await context.read<LibraryModel>().removeDeck(deck.id);
+    if (!context.mounted) return; // экран может умереть, пока «запрос» летит
+    if (error != null) {
+      messenger.showSnackBar(SnackBar(content: Text(error)));
+      return;
     }
+    messenger.showSnackBar(SnackBar(content: Text('Колода «${deck.name}» удалена')));
+    context.pop(); // объекта больше нет — его экран уходит из стека
   }
 
   @override
   Widget build(BuildContext context) {
-    final duo = context.duo;
-    final text = Theme.of(context).textTheme;
-    final deck = mockDecks.where((d) => d.id == id).firstOrNull; // экран ищет по id
+    final library = context.watch<LibraryModel>();
+    final deck = library.deckById(id);
     if (deck == null) {
+      // у null два смысла: список ещё грузится или колоды с таким id нет
       return Scaffold(
         appBar: AppBar(),
-        body: const Center(child: Text('Колода не существует')),
+        body: library.isLoading
+            ? const LoadingView()
+            : library.error != null
+            ? ErrorView(message: library.error!, onRetry: () => context.read<LibraryModel>().load())
+            : const Center(child: Text('Колода не существует')),
       );
     }
-    final cards = mockCards.where((c) => c.deckId == id).toList();
-    final due = cards.where((c) => !c.nextReviewAt.isAfter(mockToday)).length;
+
+    final duo = context.duo;
+    final text = Theme.of(context).textTheme;
+    final cards = library.cardsOf(id);
+    final due = library.dueCount(id);
     final avgEase = cards.isEmpty
         ? 0.0
         : cards.fold<double>(0, (s, c) => s + c.easeFactor) / cards.length;
@@ -71,7 +96,7 @@ class DeckDetailScreen extends StatelessWidget {
             icon: const Icon(Icons.edit_rounded),
           ),
           IconButton(
-            onPressed: () => _confirmDelete(context, deck),
+            onPressed: () => _deleteDeck(context, deck),
             tooltip: 'Удалить',
             icon: const Icon(Icons.delete_outline_rounded),
           ),
@@ -124,7 +149,7 @@ class DeckDetailScreen extends StatelessWidget {
               StatTile(
                 icon: Icons.emoji_events_rounded,
                 color: duo.gold,
-                value: '${cards.where((c) => c.intervalDays >= 21).length}',
+                value: '${library.learnedCount(id)}',
                 label: 'выучено',
               ),
               StatTile(
@@ -145,18 +170,56 @@ class DeckDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           SectionTitle('Карточки (${cards.length})'),
+          if (cards.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                'В колоде пока нет карточек',
+                textAlign: TextAlign.center,
+                style: text.titleMedium?.copyWith(color: duo.muted),
+              ),
+            ),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: cards.length,
             separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, i) => FlashcardTile(
-              card: cards[i],
-              today: mockToday,
-              onTap: () => context.push('/decks/$id/cards/${cards[i].id}'),
-            ),
+            itemBuilder: (context, i) => _dismissibleCard(context, cards[i], library.now),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Свайп влево удаляет карточку (с подтверждением). Ключ — из данных, не UniqueKey.
+  Widget _dismissibleCard(BuildContext context, Flashcard card, DateTime now) {
+    final duo = context.duo;
+    return Dismissible(
+      key: ValueKey(card.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        alignment: Alignment.centerRight,
+        padding: const EdgeInsets.only(right: 24),
+        decoration: BoxDecoration(color: duo.red, borderRadius: BorderRadius.circular(16)),
+        child: Icon(Icons.delete_rounded, color: Theme.of(context).colorScheme.onError),
+      ),
+      confirmDismiss: (_) async {
+        final ok = await _confirm(
+          context,
+          'Удалить карточку?',
+          '«${card.front}» исчезнет из колоды.',
+        );
+        if (!ok || !context.mounted) return false;
+        final messenger = ScaffoldMessenger.of(context);
+        final error = await context.read<LibraryModel>().removeCard(card.id);
+        messenger.showSnackBar(SnackBar(content: Text(error ?? 'Карточка удалена')));
+        // Карточку из списка уже убрала модель (notifyListeners) — сам Dismissible не «досвайпываем».
+        return false;
+      },
+      child: FlashcardTile(
+        card: card,
+        now: now,
+        onTap: () => context.push('/decks/$id/cards/${card.id}'),
       ),
     );
   }

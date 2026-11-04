@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+
+import '../models/library_model.dart';
 
 /// Обёртка с постоянными вкладками: NavigationBar остаётся на экране,
 /// пока содержимое вкладки меняется. Текущий индекс знает router —
@@ -16,18 +19,33 @@ class AppShell extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: navigationShell.goBranch, // переключает вкладку
-        destinations: const [
+        destinations: [
           NavigationDestination(
-            icon: Icon(Icons.layers_outlined),
-            selectedIcon: Icon(Icons.layers_rounded),
+            // Consumer — один «живой угол»: бейдж к повторению меняется с каждой мутацией
+            icon: Consumer<LibraryModel>(
+              builder: (context, library, child) => Badge(
+                isLabelVisible: library.totalDue > 0,
+                label: Text('${library.totalDue}'),
+                child: child!,
+              ),
+              child: const Icon(Icons.layers_outlined),
+            ),
+            selectedIcon: Consumer<LibraryModel>(
+              builder: (context, library, child) => Badge(
+                isLabelVisible: library.totalDue > 0,
+                label: Text('${library.totalDue}'),
+                child: child!,
+              ),
+              child: const Icon(Icons.layers_rounded),
+            ),
             label: 'Колоды',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined),
             selectedIcon: Icon(Icons.bar_chart_rounded),
             label: 'Статистика',
           ),
-          NavigationDestination(
+          const NavigationDestination(
             icon: Icon(Icons.person_outline_rounded),
             selectedIcon: Icon(Icons.person_rounded),
             label: 'Профиль',

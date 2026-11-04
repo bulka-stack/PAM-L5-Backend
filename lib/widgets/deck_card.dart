@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_data.dart';
+import '../data/deck.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 import 'duo_progress_bar.dart';
@@ -11,15 +11,25 @@ import 'subject_avatar.dart';
 /// Используется на экранах «Мои колоды» и «Профиль».
 class DeckCard extends StatelessWidget {
   final Deck deck;
+  final int cardCount; // L4: счётчики считает модель, карточка их только показывает
+  final int dueCount;
+  final int learnedCount;
   final VoidCallback? onTap; // L3: карточка «оживает» — переход к деталям
 
-  const DeckCard({super.key, required this.deck, this.onTap});
+  const DeckCard({
+    super.key,
+    required this.deck,
+    required this.cardCount,
+    required this.dueCount,
+    required this.learnedCount,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
     final duo = context.duo;
     final text = Theme.of(context).textTheme;
-    final progress = deck.cardCount == 0 ? 0.0 : deck.learned / deck.cardCount;
+    final progress = cardCount == 0 ? 0.0 : learnedCount / cardCount;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -43,7 +53,7 @@ class DeckCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${deck.subject} · ${cardsLabel(deck.cardCount)}',
+                      '${deck.subject} · ${cardsLabel(cardCount)}',
                       style: text.bodySmall?.copyWith(color: duo.muted),
                     ),
                     const SizedBox(height: 8),
@@ -52,7 +62,7 @@ class DeckCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              _DueBadge(count: deck.dueToday),
+              _DueBadge(count: dueCount),
             ],
           ),
         ),

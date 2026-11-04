@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_data.dart';
+import '../data/flashcard.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 
@@ -9,17 +9,17 @@ import '../utils/formatters.dart';
 class FlashcardTile extends StatelessWidget {
   final Flashcard card;
 
-  /// Дата, относительно которой карточка «к повторению» (на L2 — фиксированная).
-  final DateTime today;
+  /// Момент, относительно которого карточка «к повторению».
+  final DateTime now;
   final VoidCallback? onTap; // L3: открыть форму редактирования карточки
 
-  const FlashcardTile({super.key, required this.card, required this.today, this.onTap});
+  const FlashcardTile({super.key, required this.card, required this.now, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     final duo = context.duo;
     final text = Theme.of(context).textTheme;
-    final due = !card.nextReviewAt.isAfter(today);
+    final due = card.isDue(now);
 
     return Card(
       clipBehavior: Clip.antiAlias,
