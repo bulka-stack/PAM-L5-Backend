@@ -9,6 +9,7 @@ import { login, me, register, requireAuth } from './src/auth.js';
 import { initDb } from './src/db.js';
 import { apiError, json, notFound, validationError } from './src/errors.js';
 import { downloadFile, initFileStorage, uploadFile } from './src/files.js';
+import { createDeck, deleteDeck, getDeck, listDecks, updateDeck } from './src/decks.js';
 import {
   createNote,
   deleteNote,
@@ -66,6 +67,12 @@ app.post('/notes', requireAuth, createNote);
 app.get('/notes/:id', requireAuth, getNote);
 app.put('/notes/:id', requireAuth, updateNote);
 app.delete('/notes/:id', requireAuth, deleteNote);
+// StudyCards (тема T13): колоды, карточки, сессии повторения — под тем же requireAuth.
+app.get('/decks', requireAuth, listDecks);
+app.post('/decks', requireAuth, createDeck);
+app.get('/decks/:id', requireAuth, getDeck);
+app.put('/decks/:id', requireAuth, updateDeck);
+app.delete('/decks/:id', requireAuth, deleteDeck);
 app.post('/files', requireAuth, uploadFile);
 app.get('/files/:id', downloadFile);
 
