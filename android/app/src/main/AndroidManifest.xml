@@ -1,5 +1,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- L5: приложение ходит к собственному backend-у по сети -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
+        android:usesCleartextTraffic="true"
         android:label="study_cards"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
