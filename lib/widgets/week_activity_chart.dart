@@ -4,12 +4,16 @@ import '../theme/app_theme.dart';
 
 /// Столбчатая диаграмма «карточек за день» за неделю — без сторонних пакетов.
 class WeekActivityChart extends StatelessWidget {
-  final List<int> values; // 7 значений, Пн…Вс
+  final List<int> values; // 7 значений, последнее — сегодня
+  final List<String> labels; // подписи дней недели
   final int highlightIndex; // «сегодня»
 
-  const WeekActivityChart({super.key, required this.values, this.highlightIndex = 6});
-
-  static const _days = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+  const WeekActivityChart({
+    super.key,
+    required this.values,
+    required this.labels,
+    this.highlightIndex = 6,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +46,7 @@ class WeekActivityChart extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        _days[i % 7],
+                        labels[i],
                         style: text.labelMedium?.copyWith(
                           color: i == highlightIndex ? duo.orange : duo.muted,
                         ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/mock_data.dart';
+import '../data/review_session.dart';
 import '../theme/app_theme.dart';
 import '../utils/formatters.dart';
 
@@ -8,8 +8,9 @@ import '../utils/formatters.dart';
 /// Используется на экранах «Статистика» и «Профиль».
 class SessionTile extends StatelessWidget {
   final ReviewSession session;
+  final String deckName; // сессия хранит deckId, имя колоды подставляет экран
 
-  const SessionTile({super.key, required this.session});
+  const SessionTile({super.key, required this.session, required this.deckName});
 
   @override
   Widget build(BuildContext context) {
@@ -27,7 +28,7 @@ class SessionTile extends StatelessWidget {
           foregroundColor: onColor,
           child: Text('$p%', style: text.labelMedium?.copyWith(color: onColor)),
         ),
-        title: Text(session.deckName, maxLines: 1, overflow: TextOverflow.ellipsis),
+        title: Text(deckName, maxLines: 1, overflow: TextOverflow.ellipsis),
         subtitle: Text(formatDateTime(session.date)),
         trailing: Text(
           '${session.correctCount}/${session.reviewedCount}',
