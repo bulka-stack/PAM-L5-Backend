@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../data/mock_data.dart';
+import '../data/deck.dart';
+import '../models/library_model.dart';
 import '../theme/app_theme.dart';
+import '../utils/subjects.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/subject_avatar.dart';
 
 /// Экран 4. Форма новой колоды / редактирования.
 /// L3: Form + TextFormField + validator, контроллер освобождается в dispose.
+/// L4: валидный submit пишет колоду через модель → repository.
 class DeckFormScreen extends StatefulWidget {
   /// null — новая колода, иначе редактирование колоды с этим id.
   final int? deckId;
@@ -24,6 +28,8 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameCtrl = TextEditingController();
   String? _subject;
+  Deck? _editing;
+  bool _busy = false; // запрос «летит» — кнопка гаснет (двойной submit)
 
   bool get _isEdit => widget.deckId != null;
 
@@ -31,10 +37,10 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
   void initState() {
     super.initState();
     if (_isEdit) {
-      final deck = mockDecks.where((d) => d.id == widget.deckId).firstOrNull;
-      if (deck != null) {
-        _nameCtrl.text = deck.name;
-        _subject = deck.subject;
+      _editing = context.read<LibraryModel>().deckById(widget.deckId!); // read: разовое чтение
+      if (_editing != null) {
+        _nameCtrl.text = _editing!.name;
+        _subject = _editing!.subject;
       }
     }
   }
@@ -53,18 +59,29 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
     return null;
   }
 
-  void _save() {
-    if (!_formKey.currentState!.validate()) return; // ошибки уже на экране
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return; // валидация L3, нетронута
+    if (_isEdit && _editing == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Колода не существует')));
+      return;
+    }
+    final name = _nameCtrl.text.trim();
+    final model = context.read<LibraryModel>();
+    setState(() => _busy = true);
+    final error = _editing != null
+        ? await model.updateDeck(_editing!.copyWith(name: name, subject: _subject))
+        : await model.addDeck(Deck(0, name, _subject!)); // id 0 — настоящий даст хранилище
+    if (!mounted) return; // экран может умереть, пока запрос летит
+    setState(() => _busy = false);
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error))); // данные остаются
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _isEdit
-              ? 'Колода «${_nameCtrl.text.trim()}» сохранена'
-              : 'Колода «${_nameCtrl.text.trim()}» создана',
-        ),
-      ),
+      SnackBar(content: Text(_isEdit ? 'Колода «$name» сохранена' : 'Колода «$name» создана')),
     );
-    context.pop(); // открыто push-ем → закрывается pop-ом
+    context.pop(); // список позади УЖЕ обновлён — notifyListeners
   }
 
   @override
@@ -143,7 +160,10 @@ class _DeckFormScreenState extends State<DeckFormScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            DuoButton(label: _isEdit ? 'Сохранить' : 'Создать колоду', onPressed: _save),
+            DuoButton(
+              label: _busy ? 'Сохранение…' : (_isEdit ? 'Сохранить' : 'Создать колоду'),
+              onPressed: _busy ? null : _save,
+            ),
           ],
         ),
       ),

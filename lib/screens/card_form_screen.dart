@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 
-import '../data/mock_data.dart';
+import '../data/flashcard.dart';
+import '../models/library_model.dart';
 import '../theme/app_theme.dart';
 import '../widgets/duo_button.dart';
 import '../widgets/subject_avatar.dart';
 
 /// Экран 5. Форма новой карточки / редактирования: лицевая и обратная сторона.
 /// L3: валидация темы — обе стороны непустые (и не совпадают).
+/// L4: валидный submit пишет карточку через модель → repository.
 class CardFormScreen extends StatefulWidget {
   final int deckId;
 
@@ -29,6 +32,8 @@ class _CardFormScreenState extends State<CardFormScreen> {
   final _backCtrl = TextEditingController();
   final _frontFocus = FocusNode();
   bool _showBack = false; // предпросмотр: какая сторона видна (эфемерно)
+  bool _busy = false;
+  Flashcard? _editing;
 
   bool get _isEdit => widget.cardId != null;
 
@@ -36,10 +41,10 @@ class _CardFormScreenState extends State<CardFormScreen> {
   void initState() {
     super.initState();
     if (_isEdit) {
-      final card = mockCards.where((c) => c.id == widget.cardId).firstOrNull;
-      if (card != null) {
-        _frontCtrl.text = card.front;
-        _backCtrl.text = card.back;
+      _editing = context.read<LibraryModel>().cardById(widget.cardId!);
+      if (_editing != null) {
+        _frontCtrl.text = _editing!.front;
+        _backCtrl.text = _editing!.back;
       }
     }
   }
@@ -70,9 +75,26 @@ class _CardFormScreenState extends State<CardFormScreen> {
   }
 
   /// [addAnother] — «Сохранить и добавить ещё»: форма очищается, экран остаётся.
-  void _save({bool addAnother = false}) {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _save({bool addAnother = false}) async {
+    if (!_formKey.currentState!.validate()) return; // валидация L3, нетронута
+    if (_isEdit && _editing == null) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('Карточка не существует')));
+      return;
+    }
     final front = _frontCtrl.text.trim();
+    final back = _backCtrl.text.trim();
+    final model = context.read<LibraryModel>();
+    setState(() => _busy = true);
+    final error = _editing != null
+        ? await model.updateCard(_editing!.copyWith(front: front, back: back))
+        : await model.addCard(Flashcard.draft(widget.deckId, front, back, model.now));
+    if (!mounted) return; // экран может умереть, пока запрос летит
+    setState(() => _busy = false);
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error))); // поля остаются
+      return;
+    }
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(_isEdit ? 'Карточка «$front» сохранена' : 'Карточка «$front» добавлена'),
@@ -85,7 +107,7 @@ class _CardFormScreenState extends State<CardFormScreen> {
       setState(() => _showBack = false);
       _frontFocus.requestFocus();
     } else {
-      context.pop();
+      context.pop(); // список колоды позади уже вырос
     }
   }
 
@@ -108,17 +130,19 @@ class _CardFormScreenState extends State<CardFormScreen> {
         ],
       ),
     );
-    if (ok == true && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Карточка удалена')));
-      context.pop();
-    }
+    if (ok != true || !mounted) return;
+    final error = await context.read<LibraryModel>().removeCard(widget.cardId!);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(error ?? 'Карточка удалена')));
+    if (error == null) context.pop(); // объекта больше нет — экран уходит
   }
 
   @override
   Widget build(BuildContext context) {
     final duo = context.duo;
     final text = Theme.of(context).textTheme;
-    final deck = mockDecks.where((d) => d.id == widget.deckId).firstOrNull;
+    final deck = context.watch<LibraryModel>().deckById(widget.deckId);
     final previewText = _showBack ? _backCtrl.text.trim() : _frontCtrl.text.trim();
 
     return Scaffold(
@@ -212,13 +236,16 @@ class _CardFormScreenState extends State<CardFormScreen> {
               ),
             ),
             const SizedBox(height: 32),
-            DuoButton(label: _isEdit ? 'Сохранить' : 'Сохранить карточку', onPressed: _save),
+            DuoButton(
+              label: _busy ? 'Сохранение…' : (_isEdit ? 'Сохранить' : 'Сохранить карточку'),
+              onPressed: _busy ? null : _save,
+            ),
             if (!_isEdit) ...[
               const SizedBox(height: 12),
               DuoButton(
                 label: 'Сохранить и добавить ещё',
                 variant: DuoButtonVariant.outline,
-                onPressed: () => _save(addAnother: true),
+                onPressed: _busy ? null : () => _save(addAnother: true),
               ),
             ],
           ],
