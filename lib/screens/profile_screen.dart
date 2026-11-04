@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import '../data/mock_database.dart';
+import '../data/auth_api.dart';
 import '../models/library_model.dart';
 import '../models/sessions_model.dart';
 import '../models/user_model.dart';
@@ -18,17 +18,9 @@ import '../widgets/stat_tile.dart';
 
 /// Экран 8. Профиль пользователя.
 /// L4: пользователь — из UserModel, статистика — из SessionsModel и LibraryModel.
-/// Переключатель «Симулировать сбой сети» — единственное место UI, знающее о mock-е
-/// (леса демонстрации, исчезают на L5 вместе с mock-ом).
-class ProfileScreen extends StatefulWidget {
+/// L5: переключатель аварии удалён вместе с mock-ом; выход стирает token (AuthApi.logout).
+class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
-
-  @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
-}
-
-class _ProfileScreenState extends State<ProfileScreen> {
-  bool _simulateError = false; // эфемерное состояние переключателя → setState (C7)
 
   /// Блокирующее решение → AlertDialog с результатом (C6).
   Future<void> _logout(BuildContext context) async {
@@ -50,9 +42,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-    if (ok == true && context.mounted) {
-      context.go('/login'); // go: раздел с вкладками уходит из стека
-    }
+    if (ok != true || !context.mounted) return;
+    await context.read<AuthApi>().logout(); // token выброшен из prefs
+    if (context.mounted) context.go('/login'); // go: раздел с вкладками уходит из стека
   }
 
   @override
@@ -178,18 +170,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   cardsLabel(SessionsModel.dailyGoal),
                   style: text.titleSmall?.copyWith(color: scheme.secondary),
                 ),
-              ),
-              const Divider(height: 2),
-              // Леса демонстрации аварии (Задание 7 L4): умирают на L5 вместе с mock-ом.
-              SwitchListTile(
-                value: _simulateError,
-                onChanged: (value) {
-                  setState(() => _simulateError = value);
-                  context.read<MockDatabase>().simulateError = value;
-                },
-                secondary: Icon(Icons.wifi_off_rounded, color: _simulateError ? duo.red : null),
-                title: const Text('Симулировать сбой сети'),
-                subtitle: const Text('Любой запрос к хранилищу провалится'),
               ),
             ],
           ),
