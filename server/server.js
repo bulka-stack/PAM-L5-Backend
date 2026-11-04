@@ -11,6 +11,7 @@ import { apiError, json, notFound, validationError } from './src/errors.js';
 import { downloadFile, initFileStorage, uploadFile } from './src/files.js';
 import { createCard, deleteCard, getCard, listCards, updateCard } from './src/cards.js';
 import { createDeck, deleteDeck, getDeck, listDecks, updateDeck } from './src/decks.js';
+import { createSession, deleteSession, listSessions } from './src/review_sessions.js';
 import {
   createNote,
   deleteNote,
@@ -79,6 +80,9 @@ app.post('/cards', requireAuth, createCard);
 app.get('/cards/:id', requireAuth, getCard);
 app.put('/cards/:id', requireAuth, updateCard);
 app.delete('/cards/:id', requireAuth, deleteCard);
+app.get('/review-sessions', requireAuth, listSessions);
+app.post('/review-sessions', requireAuth, createSession);
+app.delete('/review-sessions/:id', requireAuth, deleteSession);
 app.post('/files', requireAuth, uploadFile);
 app.get('/files/:id', downloadFile);
 
