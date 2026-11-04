@@ -9,6 +9,7 @@ import { login, me, register, requireAuth } from './src/auth.js';
 import { initDb } from './src/db.js';
 import { apiError, json, notFound, validationError } from './src/errors.js';
 import { downloadFile, initFileStorage, uploadFile } from './src/files.js';
+import { createCard, deleteCard, getCard, listCards, updateCard } from './src/cards.js';
 import { createDeck, deleteDeck, getDeck, listDecks, updateDeck } from './src/decks.js';
 import {
   createNote,
@@ -73,6 +74,11 @@ app.post('/decks', requireAuth, createDeck);
 app.get('/decks/:id', requireAuth, getDeck);
 app.put('/decks/:id', requireAuth, updateDeck);
 app.delete('/decks/:id', requireAuth, deleteDeck);
+app.get('/cards', requireAuth, listCards);
+app.post('/cards', requireAuth, createCard);
+app.get('/cards/:id', requireAuth, getCard);
+app.put('/cards/:id', requireAuth, updateCard);
+app.delete('/cards/:id', requireAuth, deleteCard);
 app.post('/files', requireAuth, uploadFile);
 app.get('/files/:id', downloadFile);
 
